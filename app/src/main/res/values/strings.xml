@@ -1,6 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <!-- El ID de cliente web para Firebase Google Sign-In -->
+    <!-- ====== Firebase / Google Sign‐In ====== -->
     <string name="default_web_client_id">136177111710-XXXXXXXXXXXXXXXXXXXXXXXXXX.apps.googleusercontent.com</string>
 
     <!-- ====== App ====== -->
@@ -16,7 +17,7 @@
     <string name="action_continue">Continuar</string>
     <string name="login_button">Iniciar sesión</string>
     <string name="forgot_password">¿Ha olvidado la contraseña?</string>
-    <string name="no_account">¿No tienes cuenta? </string>
+    <string name="no_account">¿No tienes cuenta?</string>
     <string name="register">Regístrate</string>
     <string name="sign_in_with_google">Iniciar sesión con Google</string>
     <!-- Errores de validación login -->
@@ -37,6 +38,16 @@
     <string name="error_empty_name">Por favor introduce tu nombre.</string>
     <string name="error_empty_confirm_password">Por favor confirma tu contraseña.</string>
     <string name="error_password_mismatch">Las contraseñas no coinciden.</string>
-    <!-- Bienvenida -->
+
+    <!-- ====== Home / Bienvenida ====== -->
     <string name="welcome_default">¡Bienvenido/a!</string>
+
+    <!-- ====== Exercise Item ====== -->
+    <string name="exercise_icon_desc">Icono de ejercicio</string>
+
+    <!-- ====== Otros títulos fijos que usas hardcoded en layouts ====== -->
+    <string name="health_title">¡Salud y Bienestar!</string>
+    <string name="routine_title">Rutinas por grupo muscular</string>
+    <string name="weight_title">Registro Alimenticio</string>
+    <string name="settings_title">Ajustes</string>
 </resources>

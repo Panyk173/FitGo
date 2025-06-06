@@ -36,7 +36,7 @@ public class RoutineAdapter extends RecyclerView.Adapter<RoutineAdapter.GroupVie
     @Override
     public void onBindViewHolder(@NonNull GroupViewHolder holder, int position) {
         ExerciseGroup group = groupList.get(position);
-        holder.tvGroupName.setText(group.getName());
+        holder.tvGroupName.setText(group.getGroupName());
 
         // Creamos un adaptador para los ejercicios de este grupo
         ExerciseAdapter exerciseAdapter = new ExerciseAdapter(group.getExercises());
