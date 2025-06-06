@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "923024071149",
+    "firebase_url": "https://proyectotfg-1-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "proyectotfg-1",
+    "storage_bucket": "proyectotfg-1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:923024071149:android:fea2782bcd2993e7d02fe4",
+        "android_client_info": {
+          "package_name": "com.example.fitgo"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "923024071149-5d203stuhk2ntppiocv2skfkjdv1juqg.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.fitgo",
+            "certificate_hash": "bfb1f140c12d096dfb72212987fea4da0cdd0a63"
+          }
+        },
+        {
+          "client_id": "923024071149-p5adslg7o28mdhst6j0fughb3ctu51ou.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAKLmIJ4m9gl9-pGRhRt08uoBYgRVbfdAg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "923024071149-p5adslg7o28mdhst6j0fughb3ctu51ou.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
