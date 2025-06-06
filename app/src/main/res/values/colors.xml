@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Ejemplo res/values/colors.xml -->
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <color name="primary">#FF7A00</color>
+    <color name="onPrimary">#FFFFFF</color>
+    <color name="primaryVariant">#A34DD0</color>
+
+    <color name="secondary">#0043B5</color>
+    <color name="onSecondary">#FFFFFF</color>
+
+    <color name="background">#F9F9F9</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="onSurface">#1A1A1A</color>
 </resources>
+
+
