@@ -3,8 +3,11 @@ package com.example.fitgo;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.text.InputType;
-import android.widget.EditText;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -22,6 +25,8 @@ import java.util.Map;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+
+
 
 /**
  * Permite ver y añadir alimentos consumidos en cada comida.
@@ -45,10 +50,10 @@ public class WeightActivity extends AppCompatActivity {
         setContentView(R.layout.activity_weight);
 
         // 1) Enlazar vistas
-        rvBreakfast = findViewById(R.id.rvBreakfast);
-        rvLunch     = findViewById(R.id.rvLunch);
-        rvSnack     = findViewById(R.id.rvSnack);
-        rvDinner    = findViewById(R.id.rvDinner);
+        rvBreakfast    = findViewById(R.id.rvBreakfast);
+        rvLunch        = findViewById(R.id.rvLunch);
+        rvSnack        = findViewById(R.id.rvSnack);
+        rvDinner       = findViewById(R.id.rvDinner);
         tvCalorieNeeds = findViewById(R.id.tvCalorieNeeds);
 
         // 2) Crear listas vacías
@@ -58,32 +63,23 @@ public class WeightActivity extends AppCompatActivity {
         listDinner    = new ArrayList<>();
 
         // 3) Pre-poblar con 3 ejemplos en cada sección:
-        //    A) “Desayuno”: buscamos un alimento real en la API y lo duplicamos 3 veces...
-        //    B) Si la API falla, añadimos un fallback manual.
         fetchNutritionForFood("Manzana", (cal, prot) -> {
             if (cal >= 0) {
-                // Si la API devolvió algo válido, creamos 3 veces el mismo ítem de ejemplo
+                // API respondió correctamente: duplicamos 3 veces
                 for (int i = 0; i < 3; i++) {
                     listBreakfast.add(new FoodItem("Manzana (1 mediana)", cal, prot));
                 }
             } else {
-                // Fallback: datos simulados si la API no devolvió nada
+                // Fallback manual
                 listBreakfast.add(new FoodItem("Manzana (1 mediana)", 95, 0));
                 listBreakfast.add(new FoodItem("Plátano (1 mediano)", 105, 1));
                 listBreakfast.add(new FoodItem("Avena (50g)", 190, 6));
             }
-            // NOTA: como la lista cambió, luego notificaremos al adaptador. Sin embargo,
-            // adaptadores aún no existen; los creamos **después** de esta llamada.
-            // Para simplificar, podemos inicializar adaptadores aquí mismo:
             setupAdaptersAndFooter();
             calculateAndShowNeeds();
         });
 
-        // Si quieres que la app muestre algo mientras llega la respuesta de la API,
-        // podrías inicializar adaptadores con listas vacías o simuladas. Por claridad,
-        // este ejemplo espera a la respuesta antes de setear adaptadores.
-
-        // 4) Configuración del logo en la toolbar para retroceder al Home
+        // 4) Logo → Home
         ImageView logoIcon = findViewById(R.id.logo_icon);
         if (logoIcon != null) {
             logoIcon.setOnClickListener(v -> {
@@ -96,30 +92,23 @@ public class WeightActivity extends AppCompatActivity {
     }
 
     /**
-     * Configura los RecyclerView y el Footer después de poblar las 4 listas.
-     * Se le llama desde el callback de fetchNutritionForFood(...) arriba.
+     * Configura los RecyclerViews, botones y footer una vez cargados los ejemplos.
      */
     private void setupAdaptersAndFooter() {
-        // A) Crear adaptadores una sola vez, con las listas ya pre-pobladas
         adapterBreakfast = new FoodAdapter(listBreakfast);
         adapterLunch     = new FoodAdapter(listLunch);
         adapterSnack     = new FoodAdapter(listSnack);
         adapterDinner    = new FoodAdapter(listDinner);
 
-        // B) Asignar LayoutManagers y adaptadores
         rvBreakfast.setLayoutManager(new LinearLayoutManager(this));
         rvBreakfast.setAdapter(adapterBreakfast);
-
         rvLunch.setLayoutManager(new LinearLayoutManager(this));
         rvLunch.setAdapter(adapterLunch);
-
         rvSnack.setLayoutManager(new LinearLayoutManager(this));
         rvSnack.setAdapter(adapterSnack);
-
         rvDinner.setLayoutManager(new LinearLayoutManager(this));
         rvDinner.setAdapter(adapterDinner);
 
-        // C) Botones para añadir nuevos alimentos (puedes dejarlos, o añadir ejemplos)
         findViewById(R.id.btnAddBreakfast).setOnClickListener(v ->
                 showAddFoodDialog(listBreakfast, adapterBreakfast)
         );
@@ -133,117 +122,142 @@ public class WeightActivity extends AppCompatActivity {
                 showAddFoodDialog(listDinner, adapterDinner)
         );
 
-        // D) Configurar la navegación inferior
         setupFooterNavigation();
     }
 
     /**
-     * Muestra un diálogo que pide al usuario el nombre del alimento.
-     * Luego obtiene sus calorías/proteínas de Nutritionix y añade el FoodItem resultante.
+     * Muestra un diálogo con AutoCompleteTextView para buscar alimentos.
      */
     private void showAddFoodDialog(List<FoodItem> targetList, FoodAdapter targetAdapter) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Añadir nuevo alimento");
+        // 1) Inflar la vista
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_search_food, null);
+        AutoCompleteTextView actv = dialogView.findViewById(R.id.actvFoodSearch);
 
-        // Campo de texto para introducir el nombre del alimento
-        final EditText input = new EditText(this);
-        input.setHint("Nombre del alimento");
-        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
-        builder.setView(input);
+        // 2) Configurar el adaptador de sugerencias vacío
+        List<String> suggestions = new ArrayList<>();
+        ArrayAdapter<String> autoAdapter = new ArrayAdapter<>(
+                this,
+                android.R.layout.simple_dropdown_item_1line,
+                suggestions
+        );
+        actv.setAdapter(autoAdapter);
+        actv.setThreshold(2);  // empieza a sugerir tras 2 caracteres
 
-        builder.setPositiveButton("Buscar y añadir", (dialog, which) -> {
-            String foodName = input.getText().toString().trim();
-            if (foodName.isEmpty()) {
-                Toast.makeText(this, "Debes insertar un nombre", Toast.LENGTH_SHORT).show();
-                return;
+        // 3) Construir el diálogo sin mostrar todavía
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle("Añadir alimento")
+                .setView(dialogView)
+                .setPositiveButton("Añadir", (d, which) -> {
+                    String selected = actv.getText().toString().trim();
+                    if (selected.isEmpty()) {
+                        Toast.makeText(this, "Selecciona un alimento", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    fetchNutritionForFood(selected, (cal, prot) -> {
+                        if (cal >= 0) {
+                            targetList.add(new FoodItem(selected, cal, prot));
+                            targetAdapter.notifyItemInserted(targetList.size() - 1);
+                        } else {
+                            Toast.makeText(this, "No info nutricional", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                })
+                .setNegativeButton("Cancelar", null)
+                .create();
+
+        // 4) Mostrar el diálogo _antes_ de enlazar el listener de texto
+        dialog.show();
+
+        // 5) Ahora sí, enlazar el TextWatcher y la llamada a la API
+        actv.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void afterTextChanged(Editable s) {}
+            @Override
+            public void onTextChanged(CharSequence query, int start, int before, int count) {
+                if (query.length() < 2) return;
+
+                // 5a) Preparar cuerpo y llamar a autocomplete
+                Map<String, String> body = new HashMap<>();
+                body.put("query", query.toString());
+
+                ApiClient.getNutritionixApi()
+                        .autoComplete(body)
+                        .enqueue(new Callback<AutoCompleteResponse>() {
+                            @Override
+                            public void onResponse(Call<AutoCompleteResponse> call, Response<AutoCompleteResponse> resp) {
+                                if (resp.isSuccessful() && resp.body() != null) {
+                                    suggestions.clear();
+                                    for (AutoCompleteResponse.Item it : resp.body().getItems()) {
+                                        suggestions.add(it.food_name);
+                                    }
+                                    autoAdapter.notifyDataSetChanged();
+                                    // 5b) y sólo aquí, tras actualizar, forzar el dropdown
+                                    actv.showDropDown();
+                                }
+                            }
+                            @Override public void onFailure(Call<AutoCompleteResponse> call, Throwable t) {
+                                // opcional: log
+                            }
+                        });
             }
-            // Llamamos a Nutritionix
-            fetchNutritionForFood(foodName, (calories, protein) -> {
-                if (calories >= 0) {
-                    FoodItem newItem = new FoodItem(foodName, calories, protein);
-                    targetList.add(newItem);
-                    targetAdapter.notifyItemInserted(targetList.size() - 1);
-                } else {
-                    Toast.makeText(this, "No se encontró información", Toast.LENGTH_SHORT).show();
-                }
-            });
         });
-
-        builder.setNegativeButton("Cancelar", null);
-        builder.show();
     }
 
+
+
     /**
-     * Llama a Nutritionix API para obtener calorías y proteínas de un alimento.
-     * @param foodName Nombre del alimento a buscar.
-     * @param callback Callback que recibe calorías y proteínas, o (-1, -1) si no se encontró.
+     * Llama a Nutritionix API para obtener calorías y proteínas.
      */
     private void fetchNutritionForFood(String foodName, NutritionCallback callback) {
-        // Construimos el body: {"query": "foodName"}
-        Map<String, String> body = new HashMap<>();
+        Map<String,String> body = new HashMap<>();
         body.put("query", foodName);
 
-        NutritionixApi api = ApiClient.getNutritionixApi();
-        Call<NutritionixResponse> call = api.getNutrients(body);
-
-        call.enqueue(new Callback<NutritionixResponse>() {
-            @Override
-            public void onResponse(Call<NutritionixResponse> call, Response<NutritionixResponse> response) {
-                if (response.isSuccessful() && response.body() != null && !response.body().foods.isEmpty()) {
-                    com.example.fitgo.api.model.Nutrient n = response.body().foods.get(0);
-                    int calories = Math.round(n.calories);
-                    int protein  = Math.round(n.protein);
-                    callback.onResult(calories, protein);
-                } else {
-                    callback.onResult(-1, -1);
-                }
-            }
-
-            @Override
-            public void onFailure(Call<NutritionixResponse> call, Throwable t) {
-                callback.onResult(-1, -1);
-            }
-        });
+        ApiClient.getNutritionixApi()
+                .getNutrients(body)
+                .enqueue(new Callback<NutritionixResponse>() {
+                    @Override
+                    public void onResponse(Call<NutritionixResponse> call, Response<NutritionixResponse> res) {
+                        if (res.isSuccessful() && res.body()!=null && !res.body().foods.isEmpty()) {
+                            // Aquí eliminamos 'var' y usamos el tipo explícito:
+                            NutritionixResponse.Nutrient n = res.body().foods.get(0);
+                            int calories = Math.round(n.calories);
+                            int protein  = Math.round(n.protein);
+                            callback.onResult(calories, protein);
+                        } else {
+                            callback.onResult(-1, -1);
+                        }
+                    }
+                    @Override public void onFailure(Call<NutritionixResponse> call, Throwable t) {
+                        callback.onResult(-1, -1);
+                    }
+                });
     }
 
     /**
-     * Calcula las calorías diarias recomendadas y proteína diaria recomendada.
-     * Lee peso (kg) y altura (cm) de SharedPreferences "settings".
+     * Calcula y muestra necesidades diarias según peso/altura en SharedPreferences.
      */
     private void calculateAndShowNeeds() {
         SharedPreferences prefs = getSharedPreferences("settings", MODE_PRIVATE);
-        String weightStr = prefs.getString("user_weight", "");
-        String heightStr = prefs.getString("user_height", "");
+        String ws = prefs.getString("user_weight", "");
+        String hs = prefs.getString("user_height", "");
 
-        if (weightStr.isEmpty() || heightStr.isEmpty()) {
-            tvCalorieNeeds.setText(
-                    "Calorías diarias recomendadas: -- kcal\n" +
-                            "Proteína recomendada: -- g"
-            );
+        if (ws.isEmpty() || hs.isEmpty()) {
+            tvCalorieNeeds.setText("Calorías diarias recomendadas: -- kcal\nProteína recomendada: -- g");
             return;
         }
-
         try {
-            float weightKg = Float.parseFloat(weightStr);
-            float heightCm = Float.parseFloat(heightStr);
-
-            int age = 25;
-            int sex = 1; // 1 = hombre, 0 = mujer
-            float bmr = (10f * weightKg) + (6.25f * heightCm) - (5f * age) + (sex == 1 ? 5f : -161f);
-            float tdee = bmr * 1.375f; // factor 1.375 (actividad ligera)
-            float proteinNeed = weightKg * 2f;
-
-            String text = String.format(
-                    "Calorías diarias recomendadas: %d kcal\nProteína recomendada: %d g",
-                    Math.round(tdee),
-                    Math.round(proteinNeed)
-            );
-            tvCalorieNeeds.setText(text);
-        } catch (NumberFormatException e) {
+            float w = Float.parseFloat(ws);
+            float h = Float.parseFloat(hs);
+            int age = 25, sex = 1;
+            float bmr = 10*w + 6.25f*h - 5*age + (sex==1?5:-161);
+            float tdee = bmr * 1.375f;
+            float prot = w * 2f;
             tvCalorieNeeds.setText(
-                    "Calorías diarias recomendadas: -- kcal\n" +
-                            "Proteína recomendada: -- g"
+                    String.format("Calorías diarias recomendadas: %d kcal\nProteína recomendada: %d g",
+                            Math.round(tdee), Math.round(prot))
             );
+        } catch (NumberFormatException e) {
+            tvCalorieNeeds.setText("Calorías diarias recomendadas: -- kcal\nProteína recomendada: -- g");
         }
     }
 
@@ -254,50 +268,18 @@ public class WeightActivity extends AppCompatActivity {
         ImageView ivWeight   = findViewById(R.id.ivWeight);
         ImageView ivContact  = findViewById(R.id.ivContact);
 
-        if (ivRoutine != null) {
-            ivRoutine.setOnClickListener(v -> {
-                startActivity(new Intent(this, RoutineActivity.class));
-                finish();
-            });
-        }
-
-        if (ivSettings != null) {
-            ivSettings.setOnClickListener(v -> {
-                startActivity(new Intent(this, SettingsActivity.class));
-                finish();
-            });
-        }
-
-        if (ivHealth != null) {
-            ivHealth.setOnClickListener(v -> {
-                startActivity(new Intent(this, HealthActivity.class));
-                finish();
-            });
-        }
-
-        if (ivWeight != null) {
-            // Ya estás aquí
-            ivWeight.setOnClickListener(v -> {});
-        }
-
-        if (ivContact != null) {
-            ivContact.setOnClickListener(v -> {
-                startActivity(new Intent(this, ContactActivity.class));
-                finish();
-            });
-        }
+        if (ivRoutine  != null) ivRoutine.setOnClickListener(v -> { startActivity(new Intent(this, RoutineActivity.class)); finish(); });
+        if (ivSettings != null) ivSettings.setOnClickListener(v -> { startActivity(new Intent(this, SettingsActivity.class)); finish(); });
+        if (ivHealth   != null) ivHealth.setOnClickListener(v -> { startActivity(new Intent(this, HealthActivity.class)); finish(); });
+        if (ivWeight   != null) ivWeight.setOnClickListener(v -> {});  // ya en esta
+        if (ivContact  != null) ivContact.setOnClickListener(v -> { startActivity(new Intent(this, ContactActivity.class)); finish(); });
     }
 
-    /** Callback para devolver calorías y proteínas */
-    private interface NutritionCallback {
-        void onResult(int calories, int protein);
-    }
+    private interface NutritionCallback { void onResult(int calories, int protein); }
 
-    /** Modelo interno para los alimentos */
     static class FoodItem {
         String name;
-        int calories;
-        int protein;
+        int calories, protein;
         FoodItem(String name, int calories, int protein) {
             this.name = name;
             this.calories = calories;

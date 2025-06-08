@@ -15,11 +15,11 @@
       },
       "oauth_client": [
         {
-          "client_id": "923024071149-5d203stuhk2ntppiocv2skfkjdv1juqg.apps.googleusercontent.com",
+          "client_id": "923024071149-0gnjpsfsbjph14g3k1ru6tcl98eueijt.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.example.fitgo",
-            "certificate_hash": "bfb1f140c12d096dfb72212987fea4da0cdd0a63"
+            "certificate_hash": "2065da7425333e60c27be85847f6e9678665fc3a"
           }
         },
         {

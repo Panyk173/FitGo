@@ -12,9 +12,19 @@ public interface NutritionixApi {
 
     @Headers({
             "Content-Type: application/json",
-            "x-app-id: ff5214d8",       // Tu Application ID (ff5214d8)
-            "x-app-key: 16f8781bf16f227dca58994b14b4dab3"  // Tu Application Key
+            "x-app-id: ff5214d8",
+            "x-app-key: 16f8781bf16f227dca58994b14b4dab3"
     })
     @POST("v2/natural/nutrients")
     Call<NutritionixResponse> getNutrients(@Body Map<String, String> body);
+
+    // <<< ESTE es el que falta para Autocomplete >>>
+    @Headers({
+            "Content-Type: application/json",
+            "x-app-id: ff5214d8",
+            "x-app-key: 16f8781bf16f227dca58994b14b4dab3"
+    })
+    @POST("v2/search/instant")
+    Call<AutoCompleteResponse> autoComplete(@Body Map<String, String> body);
 }
+

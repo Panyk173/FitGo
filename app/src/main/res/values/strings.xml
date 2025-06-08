@@ -2,7 +2,7 @@
 <resources>
 
     <!-- ====== Firebase / Google Sign‐In ====== -->
-    <string name="default_web_client_id">136177111710-XXXXXXXXXXXXXXXXXXXXXXXXXX.apps.googleusercontent.com</string>
+    <string name="default_web_client_id">923024071149-p5adslg7o28mdhst6j0fughb3ctu51ou.apps.googleusercontent.com</string>
 
     <!-- ====== App ====== -->
     <string name="app_name">FitGo</string>

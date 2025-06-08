@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Si tu app usa Google Sign-In, Retrofit, Firebase, etc., necesitarás acceso a Internet -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -13,7 +16,7 @@
         android:theme="@style/Theme.FitGo"
         tools:targetApi="31">
 
-        <!-- Pantalla principal -->
+        <!-- Pantalla principal (login) -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -28,11 +31,38 @@
             android:name=".RegisterActivity"
             android:exported="true" />
 
-        <!-- Pantalla tras login exitoso -->
+        <!-- Pantalla tras login exitoso (Home) -->
         <activity
             android:name=".HomeActivity"
             android:exported="true" />
 
-    </application>
+        <!-- Pantalla de Ajustes -->
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="true" />
 
+        <!-- Pantalla Salud (HealthActivity) -->
+        <activity
+            android:name=".HealthActivity"
+            android:exported="true" />
+
+        <!-- Pantalla Registro Alimenticio (WeightActivity) -->
+        <activity
+            android:name=".WeightActivity"
+            android:exported="true" />
+
+        <!-- Pantalla de Contacto/Chat (ContactActivity) -->
+        <activity
+            android:name=".ContactActivity"
+            android:exported="true" />
+
+        <!-- Pantalla Rutinas por grupo muscular (RoutineActivity) -->
+        <activity
+            android:name=".RoutineActivity"
+            android:exported="true" />
+
+        <!-- Si en el futuro añades más activities, inclúyelas aquí: -->
+        <!-- <activity android:name=".OtraActividad" android:exported="true" /> -->
+
+    </application>
 </manifest>

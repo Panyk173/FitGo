@@ -10,43 +10,40 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.List;
 
-/**
- * Adaptador sencillo para mostrar FoodItem (nombre, calorías, proteínas).
- */
 public class FoodAdapter extends RecyclerView.Adapter<FoodAdapter.ViewHolder> {
 
-    private final List<WeightActivity.FoodItem> foodList;
+    private final List<WeightActivity.FoodItem> data;
 
-    public FoodAdapter(List<WeightActivity.FoodItem> foodList) {
-        this.foodList = foodList;
+    public FoodAdapter(List<WeightActivity.FoodItem> data) {
+        this.data = data;
     }
 
-    @NonNull
-    @Override
-    public FoodAdapter.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext())
+    @NonNull @Override
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View v = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_food, parent, false);
-        return new ViewHolder(view);
+        return new ViewHolder(v);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull FoodAdapter.ViewHolder holder, int position) {
-        WeightActivity.FoodItem item = foodList.get(position);
-        holder.tvFoodName.setText(item.name);
-        holder.tvFoodInfo.setText("Cal: " + item.calories + "  Prot: " + item.protein + "g");
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        WeightActivity.FoodItem item = data.get(position);
+        holder.tvName.setText(item.name);
+        holder.tvInfo.setText(
+                String.format("Cal: %d  Prot: %d g", item.calories, item.protein)
+        );
     }
 
-    @Override
-    public int getItemCount() {
-        return foodList.size();
+    @Override public int getItemCount() {
+        return data.size();
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvFoodName, tvFoodInfo;
-        ViewHolder(@NonNull View itemView) {
+        TextView tvName, tvInfo;
+        ViewHolder(View itemView) {
             super(itemView);
-            tvFoodName = itemView.findViewById(R.id.tvFoodName);
-            tvFoodInfo = itemView.findViewById(R.id.tvFoodInfo);
+            tvName = itemView.findViewById(R.id.tvFoodName);
+            tvInfo = itemView.findViewById(R.id.tvFoodInfo);
         }
     }
 }
