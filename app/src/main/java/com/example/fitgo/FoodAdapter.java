@@ -3,47 +3,63 @@ package com.example.fitgo;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
+
 import java.util.List;
 
-public class FoodAdapter extends RecyclerView.Adapter<FoodAdapter.ViewHolder> {
+public class FoodAdapter extends RecyclerView.Adapter<FoodAdapter.FoodViewHolder> {
 
-    private final List<WeightActivity.FoodItem> data;
+    private final List<WeightActivity.FoodItem> foodList;
 
-    public FoodAdapter(List<WeightActivity.FoodItem> data) {
-        this.data = data;
+    public FoodAdapter(List<WeightActivity.FoodItem> foodList) {
+        this.foodList = foodList;
     }
 
-    @NonNull @Override
-    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View v = LayoutInflater.from(parent.getContext())
+    public static class FoodViewHolder extends RecyclerView.ViewHolder {
+        ImageView ivFoodImage;
+        TextView tvFoodName, tvFoodInfo;
+
+        public FoodViewHolder(@NonNull View itemView) {
+            super(itemView);
+            ivFoodImage = itemView.findViewById(R.id.ivFoodImage);
+            tvFoodName = itemView.findViewById(R.id.tvFoodName);
+            tvFoodInfo = itemView.findViewById(R.id.tvFoodInfo);
+        }
+    }
+
+    @NonNull
+    @Override
+    public FoodViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_food, parent, false);
-        return new ViewHolder(v);
+        return new FoodViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        WeightActivity.FoodItem item = data.get(position);
-        holder.tvName.setText(item.name);
-        holder.tvInfo.setText(
-                String.format("Cal: %d  Prot: %d g", item.calories, item.protein)
-        );
-    }
+    public void onBindViewHolder(@NonNull FoodViewHolder holder, int position) {
+        WeightActivity.FoodItem item = foodList.get(position);
 
-    @Override public int getItemCount() {
-        return data.size();
-    }
+        holder.tvFoodName.setText(item.name);
+        holder.tvFoodInfo.setText("Cal: " + item.calories + "  Prot: " + item.protein + " g");
 
-    static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvName, tvInfo;
-        ViewHolder(View itemView) {
-            super(itemView);
-            tvName = itemView.findViewById(R.id.tvFoodName);
-            tvInfo = itemView.findViewById(R.id.tvFoodInfo);
+        if (item.imageUrl != null && !item.imageUrl.isEmpty()) {
+            Glide.with(holder.itemView.getContext())
+                    .load(item.imageUrl)
+                    .placeholder(R.drawable.ic_food_placeholder)
+                    .into(holder.ivFoodImage);
+        } else {
+            holder.ivFoodImage.setImageResource(R.drawable.ic_food_placeholder);
         }
+    }
+
+    @Override
+    public int getItemCount() {
+        return foodList.size();
     }
 }

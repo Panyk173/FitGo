@@ -13,7 +13,7 @@ public interface NutritionixApi {
     @Headers({
             "Content-Type: application/json",
             "x-app-id: ff5214d8",
-            "x-app-key: 16f8781bf16f227dca58994b14b4dab3"
+            "x-app-key: b26cfa1c61ca325ee3b96c4c28804d4d"
     })
     @POST("v2/natural/nutrients")
     Call<NutritionixResponse> getNutrients(@Body Map<String, String> body);
@@ -22,9 +22,8 @@ public interface NutritionixApi {
     @Headers({
             "Content-Type: application/json",
             "x-app-id: ff5214d8",
-            "x-app-key: 16f8781bf16f227dca58994b14b4dab3"
+            "x-app-key: b26cfa1c61ca325ee3b96c4c28804d4d"
     })
     @POST("v2/search/instant")
     Call<AutoCompleteResponse> autoComplete(@Body Map<String, String> body);
 }
-
