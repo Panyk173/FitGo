@@ -61,8 +61,21 @@
             android:name=".RoutineActivity"
             android:exported="true" />
 
-        <!-- Si en el futuro añades más activities, inclúyelas aquí: -->
-        <!-- <activity android:name=".OtraActividad" android:exported="true" /> -->
+        <!-- Pantalla Graficos salud -->
+
+        <activity
+            android:name=".SleepChartActivity"
+            android:exported="true" />
+
+        <activity
+            android:name=".WaterChartActivity"
+            android:exported="true"
+            />
+
+        <activity
+            android:name=".WeightChartActivity"
+            android:exported="true"
+            />
 
     </application>
 </manifest>

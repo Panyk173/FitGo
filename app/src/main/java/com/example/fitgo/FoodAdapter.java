@@ -21,18 +21,6 @@ public class FoodAdapter extends RecyclerView.Adapter<FoodAdapter.FoodViewHolder
         this.foodList = foodList;
     }
 
-    public static class FoodViewHolder extends RecyclerView.ViewHolder {
-        ImageView ivFoodImage;
-        TextView tvFoodName, tvFoodInfo;
-
-        public FoodViewHolder(@NonNull View itemView) {
-            super(itemView);
-            ivFoodImage = itemView.findViewById(R.id.ivFoodImage);
-            tvFoodName = itemView.findViewById(R.id.tvFoodName);
-            tvFoodInfo = itemView.findViewById(R.id.tvFoodInfo);
-        }
-    }
-
     @NonNull
     @Override
     public FoodViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -44,22 +32,40 @@ public class FoodAdapter extends RecyclerView.Adapter<FoodAdapter.FoodViewHolder
     @Override
     public void onBindViewHolder(@NonNull FoodViewHolder holder, int position) {
         WeightActivity.FoodItem item = foodList.get(position);
-
-        holder.tvFoodName.setText(item.name);
-        holder.tvFoodInfo.setText("Cal: " + item.calories + "  Prot: " + item.protein + " g");
+        holder.tvName.setText(item.name);
+        holder.tvInfo.setText("Cal: " + item.calories + "  Prot: " + item.protein + " g");
 
         if (item.imageUrl != null && !item.imageUrl.isEmpty()) {
             Glide.with(holder.itemView.getContext())
                     .load(item.imageUrl)
-                    .placeholder(R.drawable.ic_food_placeholder)
-                    .into(holder.ivFoodImage);
+                    .into(holder.ivFood);
         } else {
-            holder.ivFoodImage.setImageResource(R.drawable.ic_food_placeholder);
+            holder.ivFood.setImageResource(R.drawable.ic_food_placeholder); // imagen por defecto
         }
+
+        holder.ivDelete.setOnClickListener(v -> {
+            foodList.remove(position);
+            notifyItemRemoved(position);
+            notifyItemRangeChanged(position, foodList.size());
+            // Puedes también llamar a guardarComidasEnFirestore() desde la actividad.
+        });
     }
 
     @Override
     public int getItemCount() {
         return foodList.size();
+    }
+
+    public static class FoodViewHolder extends RecyclerView.ViewHolder {
+        TextView tvName, tvInfo;
+        ImageView ivFood, ivDelete;
+
+        public FoodViewHolder(@NonNull View itemView) {
+            super(itemView);
+            tvName = itemView.findViewById(R.id.tvFoodName);
+            tvInfo = itemView.findViewById(R.id.tvFoodInfo);
+            ivFood = itemView.findViewById(R.id.ivFoodImage);
+            ivDelete = itemView.findViewById(R.id.ivDeleteFood);
+        }
     }
 }

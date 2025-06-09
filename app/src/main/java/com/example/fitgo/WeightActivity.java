@@ -17,10 +17,17 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.DocumentSnapshot;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -33,10 +40,16 @@ public class WeightActivity extends AppCompatActivity {
     private List<FoodItem> listBreakfast, listLunch, listSnack, listDinner;
     private TextView tvCalorieNeeds;
 
+    private FirebaseFirestore db;
+    private String userId;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_weight);
+
+        db = FirebaseFirestore.getInstance();
+        userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
         rvBreakfast = findViewById(R.id.rvBreakfast);
         rvLunch = findViewById(R.id.rvLunch);
@@ -49,13 +62,9 @@ public class WeightActivity extends AppCompatActivity {
         listSnack = new ArrayList<>();
         listDinner = new ArrayList<>();
 
-        fetchNutritionForFood("Manzana", item -> {
-            for (int i = 0; i < 1; i++) {
-                listBreakfast.add(item);
-            }
-            setupAdaptersAndFooter();
-            calculateAndShowNeeds();
-        });
+        setupAdaptersAndFooter();
+        calculateAndShowNeeds();
+        cargarComidasDesdeFirestore(); // Cargar desde Firestore
 
         ImageView logoIcon = findViewById(R.id.logo_icon);
         if (logoIcon != null) {
@@ -86,25 +95,63 @@ public class WeightActivity extends AppCompatActivity {
         findViewById(R.id.btnAddBreakfast).setOnClickListener(v -> showFoodSearchDialog(item -> {
             listBreakfast.add(item);
             adapterBreakfast.notifyDataSetChanged();
+            guardarComidasEnFirestore();
         }));
 
         findViewById(R.id.btnAddLunch).setOnClickListener(v -> showFoodSearchDialog(item -> {
             listLunch.add(item);
             adapterLunch.notifyDataSetChanged();
+            guardarComidasEnFirestore();
         }));
 
         findViewById(R.id.btnAddSnack).setOnClickListener(v -> showFoodSearchDialog(item -> {
             listSnack.add(item);
             adapterSnack.notifyDataSetChanged();
+            guardarComidasEnFirestore();
         }));
 
         findViewById(R.id.btnAddDinner).setOnClickListener(v -> showFoodSearchDialog(item -> {
             listDinner.add(item);
             adapterDinner.notifyDataSetChanged();
+            guardarComidasEnFirestore();
         }));
 
         setupFooterNavigation();
     }
+
+    private void cargarComidasDesdeFirestore() {
+        String today = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
+
+        db.collection("users").document(userId)
+                .collection("meals").document(today)
+                .get()
+                .addOnSuccessListener(doc -> {
+                    if (doc.exists()) {
+                        cargarComidaDesdeFirestore(doc, "breakfast", listBreakfast, adapterBreakfast);
+                        cargarComidaDesdeFirestore(doc, "lunch", listLunch, adapterLunch);
+                        cargarComidaDesdeFirestore(doc, "snack", listSnack, adapterSnack);
+                        cargarComidaDesdeFirestore(doc, "dinner", listDinner, adapterDinner);
+                    }
+                });
+    }
+
+    private void cargarComidaDesdeFirestore(DocumentSnapshot doc, String key,
+                                            List<FoodItem> lista, FoodAdapter adapter) {
+        List<Map<String, Object>> datos = (List<Map<String, Object>>) doc.get(key);
+        if (datos != null) {
+            lista.clear();
+            for (Map<String, Object> map : datos) {
+                String name = (String) map.get("name");
+                long cal = map.get("calories") instanceof Long ? (Long) map.get("calories") : 0;
+                long prot = map.get("protein") instanceof Long ? (Long) map.get("protein") : 0;
+                String img = map.containsKey("imageUrl") ? (String) map.get("imageUrl") : ""; // 👈 AÑADIR
+
+                lista.add(new FoodItem(name, (int) cal, (int) prot, img)); // 👈 PASAR LA IMAGEN
+            }
+            adapter.notifyDataSetChanged();
+        }
+    }
+
 
     private void showFoodSearchDialog(FoodSelectionListener listener) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -228,6 +275,37 @@ public class WeightActivity extends AppCompatActivity {
         if (ivHealth != null) ivHealth.setOnClickListener(v -> startActivity(new Intent(this, HealthActivity.class)));
         if (ivWeight != null) ivWeight.setOnClickListener(v -> {});
         if (ivContact != null) ivContact.setOnClickListener(v -> startActivity(new Intent(this, ContactActivity.class)));
+    }
+
+    private void guardarComidasEnFirestore() {
+        Map<String, Object> data = new HashMap<>();
+
+        data.put("breakfast", getFoodMap(listBreakfast));
+        data.put("lunch", getFoodMap(listLunch));
+        data.put("snack", getFoodMap(listSnack));
+        data.put("dinner", getFoodMap(listDinner));
+
+        String fecha = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
+        data.put("timestamp", fecha);
+
+        db.collection("users").document(userId)
+                .collection("meals").document(fecha)
+                .set(data)
+                .addOnSuccessListener(aVoid -> Log.d("Firestore", "Comidas guardadas"))
+                .addOnFailureListener(e -> Log.e("Firestore", "Error al guardar comidas", e));
+    }
+
+    private List<Map<String, Object>> getFoodMap(List<FoodItem> lista) {
+        List<Map<String, Object>> res = new ArrayList<>();
+        for (FoodItem item : lista) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("name", item.name);
+            map.put("calories", item.calories);
+            map.put("protein", item.protein);
+            map.put("imageUrl", item.imageUrl);
+            res.add(map);
+        }
+        return res;
     }
 
     // callback de nutrición

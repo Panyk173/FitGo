@@ -48,5 +48,15 @@
                 android:textSize="14sp"
                 tools:text="Cal: 190  Prot: 6 g" />
         </LinearLayout>
+
+        <ImageView
+            android:id="@+id/ivDeleteFood"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:padding="6dp"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            android:contentDescription="Eliminar"
+            android:layout_marginStart="8dp" />
+
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

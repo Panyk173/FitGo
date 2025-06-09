@@ -3,6 +3,7 @@ package com.example.fitgo;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -13,43 +14,69 @@ public class HealthActivity extends AppCompatActivity {
     private TextView tvStepsToday;
     private TextView tvWeightBody;
     private TextView tvBodyFat;
+    private TextView tvWater;
+    private TextView tvSleep;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_health);
 
-        // Enlazamos las vistas
-        tvStepsToday  = findViewById(R.id.tvStepsToday);
         tvWeightBody  = findViewById(R.id.tvWeightBody);
         tvBodyFat     = findViewById(R.id.tvBodyFat);
+        tvWater       = findViewById(R.id.tvWater);
+        tvSleep       = findViewById(R.id.tvSleep);
 
-        // Leemos peso y altura desde SharedPreferences ("settings")
+        // Botón para gráfico del sueño
+        Button btnSleepChart = findViewById(R.id.btnSleepChart);
+        btnSleepChart.setOnClickListener(v -> {
+            startActivity(new Intent(this, SleepChartActivity.class));
+        });
+
+        //Botón para gráfico del agua
+        Button btnWaterChart = findViewById(R.id.btnWaterChart);
+        btnWaterChart.setOnClickListener(v -> {
+            startActivity(new Intent(this, WaterChartActivity.class));
+        });
+
+        //Botón para gráfico del peso
+        Button btnWeightChart = findViewById(R.id.btnWeightChart);
+        btnWeightChart.setOnClickListener(v -> {
+            startActivity(new Intent(this, WeightChartActivity.class));
+        });
+
+
         SharedPreferences prefs = getSharedPreferences("settings", MODE_PRIVATE);
         String weightStr = prefs.getString("user_weight", "");
         String heightStr = prefs.getString("user_height", "");
+        String waterStr  = prefs.getString("user_water", "");
+        String sleepStr  = prefs.getString("user_sleep", "");
 
-        // Mostramos peso (si existe) o "--" si no hay valor
         if (!weightStr.isEmpty()) {
             tvWeightBody.setText("Peso corporal: " + weightStr + " kg");
         } else {
             tvWeightBody.setText("Peso corporal: -- kg");
         }
 
-        // Calculamos porcentaje de grasa corporal solo si tenemos ambos valores
+        if (!waterStr.isEmpty()) {
+            tvWater.setText("Hidratación: " + waterStr + " l");
+        } else {
+            tvWater.setText("Hidratación: -- ml");
+        }
+
+        if (!sleepStr.isEmpty()) {
+            tvSleep.setText("Sueño: " + sleepStr + " h");
+        } else {
+            tvSleep.setText("Sueño: -- h");
+        }
+
         if (!weightStr.isEmpty() && !heightStr.isEmpty()) {
             try {
                 float weightKg = Float.parseFloat(weightStr);
-                // La altura se guardó en cm; la convertimos a metros
                 float heightMeters = Float.parseFloat(heightStr) / 100f;
-
-                // Fórmula IMC = peso / (altura^2)
                 float imc = weightKg / (heightMeters * heightMeters);
-
-                // Fórmula simplificada para % de grasa (Deurenberg), con edad=25 y sexo=1 (hombre)
                 float fatPercent = (1.2f * imc) + (0.23f * 25f) - (10.8f * 1f) - 5.4f;
                 if (fatPercent < 0) fatPercent = 0f;
-
                 tvBodyFat.setText(String.format("Grasa corporal: %.1f %%", fatPercent));
             } catch (NumberFormatException e) {
                 tvBodyFat.setText("Grasa corporal: -- %");
@@ -58,7 +85,6 @@ public class HealthActivity extends AppCompatActivity {
             tvBodyFat.setText("Grasa corporal: -- %");
         }
 
-        // Logo en toolbar → redirige a HomeActivity
         ImageView logoIcon = findViewById(R.id.logo_icon);
         if (logoIcon != null) {
             logoIcon.setOnClickListener(v -> {
@@ -69,7 +95,6 @@ public class HealthActivity extends AppCompatActivity {
             });
         }
 
-        // Footer navigation
         setupFooterNavigation();
     }
 
@@ -95,7 +120,6 @@ public class HealthActivity extends AppCompatActivity {
         }
 
         if (ivHealth != null) {
-            // Ya estás aquí
             ivHealth.setOnClickListener(v -> {});
         }
 

@@ -70,6 +70,7 @@
                 android:text="Cerrar sesión"
                 android:textSize="18sp"
                 android:layout_marginTop="24dp" />
+
             <!-- Peso y altura -->
             <EditText
                 android:id="@+id/etWeight"
@@ -89,14 +90,33 @@
                 android:layout_marginTop="12dp"
                 android:textSize="17sp" />
 
+            <!-- Agua -->
+            <EditText
+                android:id="@+id/etWater"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Agua (l)"
+                android:inputType="numberDecimal"
+                android:layout_marginTop="12dp"
+                android:textSize="17sp" />
+
+            <!-- Sueño -->
+            <EditText
+                android:id="@+id/etSleep"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Sueño (horas)"
+                android:inputType="numberDecimal"
+                android:layout_marginTop="12dp"
+                android:textSize="17sp" />
+
             <Button
                 android:id="@+id/btnSaveData"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Guardar peso y altura"
+                android:text="Guardar datos"
                 android:layout_marginTop="16dp"
                 android:textSize="17sp" />
-
         </LinearLayout>
     </FrameLayout>
 
@@ -206,4 +226,5 @@
                 android:textSize="17sp" />
         </LinearLayout>
     </LinearLayout>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

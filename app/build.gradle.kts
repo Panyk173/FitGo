@@ -43,9 +43,9 @@ dependencies {
     // Importar el BOM de Firebase para alinear versiones
     implementation(platform("com.google.firebase:firebase-bom:33.13.0"))
     implementation("com.google.firebase:firebase-auth")
-    implementation("com.google.firebase:firebase-firestore")
     implementation("com.google.firebase:firebase-appcheck")
     implementation("com.google.firebase:firebase-appcheck-debug")
+    implementation("com.google.firebase:firebase-firestore:24.10.0")
 
     // Retrofit + Gson para llamadas HTTP
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
@@ -57,10 +57,15 @@ dependencies {
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    androidTestImplementation(libs.espresso.core.v351)
 
     // Glide para carga de imágenes
     implementation("com.github.bumptech.glide:glide:4.16.0")
     annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
+
+    // Implementación para creación de gráficas
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+
+
 }
 

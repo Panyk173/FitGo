@@ -41,6 +41,7 @@
 
     <!-- ====== Home / Bienvenida ====== -->
     <string name="welcome_default">¡Bienvenido/a!</string>
+    <string name="contact_us">¡Contacta con tu monitor!</string>
 
     <!-- ====== Exercise Item ====== -->
     <string name="exercise_icon_desc">Icono de ejercicio</string>
