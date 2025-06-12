@@ -46,11 +46,6 @@ public class SettingsActivity extends AppCompatActivity {
         boolean darkMode = prefs.getBoolean("dark_mode", false);
         themeSwitch.setChecked(darkMode);
 
-        etWeight.setText(prefs.getString("user_weight", ""));
-        etHeight.setText(prefs.getString("user_height", ""));
-        etWater.setText(prefs.getString("user_water", ""));
-        etSleep.setText(prefs.getString("user_sleep", ""));
-
         AppCompatDelegate.setDefaultNightMode(darkMode ?
                 AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO);
 
@@ -59,6 +54,36 @@ public class SettingsActivity extends AppCompatActivity {
             AppCompatDelegate.setDefaultNightMode(isChecked ?
                     AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO);
         });
+
+        String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        // Leer los datos del usuario desde Firestore al abrir la vista
+        db.collection("users").document(userId)
+                .get()
+                .addOnSuccessListener(document -> {
+                    if (document.exists()) {
+                        String weight = document.getString("weight");
+                        String height = document.getString("height");
+                        String water = document.getString("water");
+                        String sleep = document.getString("sleep");
+
+                        etWeight.setText(weight != null ? weight : "");
+                        etHeight.setText(height != null ? height : "");
+                        etWater.setText(water != null ? water : "");
+                        etSleep.setText(sleep != null ? sleep : "");
+
+                        prefs.edit()
+                                .putString("user_weight", weight != null ? weight : "")
+                                .putString("user_height", height != null ? height : "")
+                                .putString("user_water", water != null ? water : "")
+                                .putString("user_sleep", sleep != null ? sleep : "")
+                                .apply();
+                    }
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Error al cargar datos del usuario", Toast.LENGTH_SHORT).show()
+                );
 
         btnSaveData.setOnClickListener(v -> {
             String weight = etWeight.getText().toString().trim();
@@ -77,9 +102,6 @@ public class SettingsActivity extends AppCompatActivity {
                     .putString("user_water", water)
                     .putString("user_sleep", sleep)
                     .apply();
-
-            String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-            FirebaseFirestore db = FirebaseFirestore.getInstance();
 
             // Guardado principal del usuario
             DocumentReference userRef = db.collection("users").document(userId);
@@ -117,7 +139,6 @@ public class SettingsActivity extends AppCompatActivity {
                     .collection("weight_logs")
                     .document(currentDate)
                     .set(weightEntry);
-
         });
 
         logoutButton.setOnClickListener(v -> {
