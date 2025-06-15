@@ -2,8 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Si tu app usa Google Sign-In, Retrofit, Firebase, etc., necesitarás acceso a Internet -->
-    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Permisos necesarios -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
 
     <application
         android:allowBackup="true"
@@ -16,7 +17,6 @@
         android:theme="@style/Theme.FitGo"
         tools:targetApi="31">
 
-        <!-- Pantalla principal (login) -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -26,42 +26,33 @@
             </intent-filter>
         </activity>
 
-        <!-- Pantalla de registro -->
         <activity
             android:name=".RegisterActivity"
             android:exported="true" />
 
-        <!-- Pantalla tras login exitoso (Home) -->
         <activity
             android:name=".HomeActivity"
             android:exported="true" />
 
-        <!-- Pantalla de Ajustes -->
         <activity
             android:name=".SettingsActivity"
             android:exported="true" />
 
-        <!-- Pantalla Salud (HealthActivity) -->
         <activity
             android:name=".HealthActivity"
             android:exported="true" />
 
-        <!-- Pantalla Registro Alimenticio (WeightActivity) -->
         <activity
             android:name=".WeightActivity"
             android:exported="true" />
 
-        <!-- Pantalla de Contacto/Chat (ContactActivity) -->
         <activity
             android:name=".ContactActivity"
             android:exported="true" />
 
-        <!-- Pantalla Rutinas por grupo muscular (RoutineActivity) -->
         <activity
             android:name=".RoutineActivity"
             android:exported="true" />
-
-        <!-- Pantalla Graficos salud -->
 
         <activity
             android:name=".SleepChartActivity"
@@ -69,13 +60,23 @@
 
         <activity
             android:name=".WaterChartActivity"
-            android:exported="true"
-            />
+            android:exported="true" />
 
         <activity
             android:name=".WeightChartActivity"
-            android:exported="true"
-            />
+            android:exported="true" />
+
+        <activity
+            android:name=".ChatActivity"
+            android:exported="true" />
+
+        <activity
+            android:name=".RecuperarContraseñaActivity"
+            android:exported="true" />
+
+        <activity
+            android:name=".VerificarCodigoActivity"
+            android:exported="true" />
 
     </application>
 </manifest>

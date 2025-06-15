@@ -103,9 +103,15 @@ public class SettingsActivity extends AppCompatActivity {
                     .putString("user_sleep", sleep)
                     .apply();
 
-            // Guardado principal del usuario
+            // Guardado principal del usuario (AHORA ACTUALIZAMOS en lugar de SET)
             DocumentReference userRef = db.collection("users").document(userId);
-            userRef.set(new UserData(weight, height, water, sleep))
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("weight", weight);
+            updates.put("height", height);
+            updates.put("water", water);
+            updates.put("sleep", sleep);
+
+            userRef.update(updates)
                     .addOnSuccessListener(aVoid -> Toast.makeText(this, "Datos guardados", Toast.LENGTH_SHORT).show())
                     .addOnFailureListener(e -> Toast.makeText(this, "Error al guardar en Firestore", Toast.LENGTH_SHORT).show());
 

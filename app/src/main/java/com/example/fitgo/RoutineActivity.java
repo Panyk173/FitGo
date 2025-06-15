@@ -2,162 +2,200 @@ package com.example.fitgo;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.widget.ImageView;
-
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.Button;
+import androidx.appcompat.widget.SearchView;
+import android.widget.Toast;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
+import com.google.android.material.appbar.MaterialToolbar;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import okhttp3.Interceptor;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
-public class RoutineActivity extends AppCompatActivity {
+public class RoutineActivity extends AppCompatActivity
+        implements RoutineAdapter.Listener {
 
-    private RecyclerView recyclerView;
-    private RoutineAdapter adapter;
-    private List<ExerciseGroup> groupList;
+    private static final String TAG = "RoutineActivity";
+
+    private RecyclerView recyclerViewGroups;
+    private RoutineAdapter routineAdapter;
+    private Map<String, List<Exercise>> allByZone;
+    private List<ExerciseGroup> groups;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_routine);
 
-        // 1) Logo en toolbar → MainActivity
-        ImageView logoIcon = findViewById(R.id.logo_icon);
-        if (logoIcon != null) {
-            logoIcon.setOnClickListener(v -> {
-                Intent intent = new Intent(RoutineActivity.this, MainActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                startActivity(intent);
-                finish();
-            });
+        MaterialToolbar topAppBar = findViewById(R.id.topAppBar);
+        setSupportActionBar(topAppBar);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayShowTitleEnabled(false);
         }
 
-        // 2) RecyclerView principal (grupos)
-        recyclerView = findViewById(R.id.recyclerViewGroups);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        groupList = getSampleGroups();
-        adapter = new RoutineAdapter(this, groupList);
-        recyclerView.setAdapter(adapter);
+        findViewById(R.id.logo_icon).setOnClickListener(v ->
+                startActivity(new Intent(this, HomeActivity.class))
+        );
+        findViewById(R.id.ivHealth).setOnClickListener(v ->
+                startActivity(new Intent(this, HealthActivity.class))
+        );
+        findViewById(R.id.ivWeight).setOnClickListener(v ->
+                startActivity(new Intent(this, WeightActivity.class))
+        );
+        findViewById(R.id.ivContact).setOnClickListener(v ->
+                startActivity(new Intent(this, ContactActivity.class))
+        );
+        findViewById(R.id.ivRoutine).setOnClickListener(v ->
+                startActivity(new Intent(this, RoutineActivity.class))
+        );
+        findViewById(R.id.ivSettings).setOnClickListener(v ->
+                startActivity(new Intent(this, SettingsActivity.class))
+        );
 
-        // 3) Íconos navegación inferior
-        ImageView ivRoutine  = findViewById(R.id.ivRoutine);
-        ImageView ivSettings = findViewById(R.id.ivSettings);
-        ImageView ivHealth   = findViewById(R.id.ivHealth);
-        ImageView ivWeight   = findViewById(R.id.ivWeight);
-        ImageView ivContact  = findViewById(R.id.ivContact);
+        recyclerViewGroups = findViewById(R.id.recyclerViewGroups);
+        recyclerViewGroups.setLayoutManager(new LinearLayoutManager(this));
 
-        if (ivRoutine != null) {
-            ivRoutine.setOnClickListener(v -> {
-                // Ya estás en esta pantalla
-            });
-        }
-        if (ivSettings != null) {
-            ivSettings.setOnClickListener(v -> {
-                startActivity(new Intent(this, SettingsActivity.class));
-                finish();
-            });
-        }
-        if (ivHealth != null) {
-            ivHealth.setOnClickListener(v ->
-                    startActivity(new Intent(this, HealthActivity.class))
-            );
-        }
-        if (ivWeight != null) {
-            ivWeight.setOnClickListener(v ->
-                    startActivity(new Intent(this, WeightActivity.class))
-            );
-        }
-        if (ivContact != null) {
-            ivContact.setOnClickListener(v ->
-                    startActivity(new Intent(this, ContactActivity.class))
-            );
-        }
+        // Retrofit + OkHttp for ExerciseDB (RapidAPI)
+        OkHttpClient rapidClient = new OkHttpClient.Builder()
+                .addInterceptor(chain -> {
+                    Request req = chain.request().newBuilder()
+                            .addHeader("x-rapidapi-key",  "6e1d23d757msh1338b99d5db95e6p1ddc18jsnace979dc6902")
+                            .addHeader("x-rapidapi-host", "exercisedb.p.rapidapi.com")
+                            .build();
+                    return chain.proceed(req);
+                })
+                .build();
+        Retrofit retrofitExercises = new Retrofit.Builder()
+                .baseUrl("https://exercisedb.p.rapidapi.com/")
+                .client(rapidClient)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+        ExerciseDbService exApi = retrofitExercises.create(ExerciseDbService.class);
+
+        // Retrofit + OkHttp for Azure Translator
+        OkHttpClient transClient = new OkHttpClient.Builder()
+                .addInterceptor(chain -> {
+                    Request original = chain.request();
+                    Request req = original.newBuilder()
+                            .header("Ocp-Apim-Subscription-Key",    "8jV8XWEH0w8OICTQzkFmiQoJXN9mfNIXr8oi7i6RYXlUoqeYUvk6JQQJ99BFAC5RqLJXJ3w3AAAbACOGFfeq")
+                            .header("Ocp-Apim-Subscription-Region", "westeurope")
+                            .method(original.method(), original.body())
+                            .build();
+                    return chain.proceed(req);
+                })
+                .build();
+        Retrofit retrofitTrans = new Retrofit.Builder()
+                .baseUrl("https://api.cognitive.microsofttranslator.com/")
+                .client(transClient)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+        TranslatorService trApi = retrofitTrans.create(TranslatorService.class);
+
+        // Fetch ALL exercises and then group/limit
+        ExerciseRepository repo = new ExerciseRepository(exApi, trApi);
+        repo.fetchAllExercises(new ExerciseRepository.CallbackExercises() {
+            @Override
+            public void onSuccess(List<Exercise> list) {
+                runOnUiThread(() -> groupAndDisplay(list));
+            }
+            @Override
+            public void onError(Throwable t) {
+                Log.e(TAG, "Error fetching all exercises", t);
+                runOnUiThread(() ->
+                        Toast.makeText(RoutineActivity.this,
+                                t.getMessage(), Toast.LENGTH_LONG).show()
+                );
+            }
+        });
     }
 
-    private List<ExerciseGroup> getSampleGroups() {
-        List<ExerciseGroup> groups = new ArrayList<>();
+    private void groupAndDisplay(List<Exercise> list) {
+        // 1) Agrupa por zona (español si existe)
+        allByZone = new LinkedHashMap<>();
+        for (Exercise e : list) {
+            String zona = e.getBodyPartEs() != null
+                    ? e.getBodyPartEs()
+                    : e.getBodyPart();
+            allByZone
+                    .computeIfAbsent(zona, k -> new ArrayList<>())
+                    .add(e);
+        }
 
-        // Grupo Pecho
-        groups.add(new ExerciseGroup("Pecho", Arrays.asList(
-                new Exercise("Press banca", R.drawable.ic_placeholder),
-                new Exercise("Aperturas con mancuernas", R.drawable.ic_placeholder),
-                new Exercise("Fondos en paralelas", R.drawable.ic_placeholder),
-                new Exercise("Press inclinado con barra", R.drawable.ic_placeholder),
-                new Exercise("Press declinado con mancuernas", R.drawable.ic_placeholder)
-        )));
+        // 2) Construye grupos limitados a 3
+        groups = new ArrayList<>();
+        for (Map.Entry<String, List<Exercise>> entry : allByZone.entrySet()) {
+            List<Exercise> todos = entry.getValue();
+            List<Exercise> primeros = todos.subList(0, Math.min(1, todos.size()));
+            groups.add(new ExerciseGroup(entry.getKey(), new ArrayList<>(primeros)));
+        }
 
-        // Grupo Espalda
-        groups.add(new ExerciseGroup("Espalda", Arrays.asList(
-                new Exercise("Peso muerto", R.drawable.ic_placeholder),
-                new Exercise("Remo con barra", R.drawable.ic_placeholder),
-                new Exercise("Jalón al pecho", R.drawable.ic_placeholder),
-                new Exercise("Remo con mancuerna a un brazo", R.drawable.ic_placeholder),
-                new Exercise("Pull-over con mancuerna", R.drawable.ic_placeholder)
-        )));
+        // 3) Crea adapter con listener
+        routineAdapter = new RoutineAdapter(this, groups, this);
+        recyclerViewGroups.setAdapter(routineAdapter);
+    }
 
-        // Grupo Piernas
-        groups.add(new ExerciseGroup("Piernas", Arrays.asList(
-                new Exercise("Sentadillas", R.drawable.ic_placeholder),
-                new Exercise("Prensa", R.drawable.ic_placeholder),
-                new Exercise("Zancadas", R.drawable.ic_placeholder),
-                new Exercise("Peso muerto rumano", R.drawable.ic_placeholder),
-                new Exercise("Extensión de piernas", R.drawable.ic_placeholder)
-        )));
+    @Override
+    public void onRemoveClicked(int groupPos, int exPos) {
+        groups.get(groupPos).getExercises().remove(exPos);
+        routineAdapter.notifyItemChanged(groupPos);
+    }
 
-        // Grupo Hombros
-        groups.add(new ExerciseGroup("Hombros", Arrays.asList(
-                new Exercise("Press militar", R.drawable.ic_placeholder),
-                new Exercise("Elevaciones laterales", R.drawable.ic_placeholder),
-                new Exercise("Pájaros", R.drawable.ic_placeholder),
-                new Exercise("Press Arnold", R.drawable.ic_placeholder),
-                new Exercise("Encogimientos de hombros", R.drawable.ic_placeholder)
-        )));
+    @Override
+    public void onAddClicked(int groupPos) {
+        showAddDialog(groupPos);
+    }
 
-        // Grupo Bíceps
-        groups.add(new ExerciseGroup("Bíceps", Arrays.asList(
-                new Exercise("Curl con barra", R.drawable.ic_placeholder),
-                new Exercise("Curl alterno con mancuernas", R.drawable.ic_placeholder),
-                new Exercise("Curl concentrado", R.drawable.ic_placeholder),
-                new Exercise("Curl predicador", R.drawable.ic_placeholder),
-                new Exercise("Curl martillo", R.drawable.ic_placeholder)
-        )));
+    private void showAddDialog(int groupPos) {
+        String zona = groups.get(groupPos).getGroupName();
+        List<Exercise> disponibles = new ArrayList<>(allByZone.get(zona));
+        disponibles.removeAll(groups.get(groupPos).getExercises());
 
-        // Grupo Tríceps
-        groups.add(new ExerciseGroup("Tríceps", Arrays.asList(
-                new Exercise("Extensiones en polea", R.drawable.ic_placeholder),
-                new Exercise("Press cerrado", R.drawable.ic_placeholder),
-                new Exercise("Fondos entre bancos", R.drawable.ic_placeholder),
-                new Exercise("Extensión con mancuerna por encima de la cabeza", R.drawable.ic_placeholder),
-                new Exercise("Patada de tríceps", R.drawable.ic_placeholder)
-        )));
+        View dialogView = LayoutInflater.from(this)
+                .inflate(R.layout.dialog_search_exercises, null);
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(dialogView)
+                .create();
 
-        // Grupo Core / Abdominales
-        groups.add(new ExerciseGroup("Core / Abdominales", Arrays.asList(
-                new Exercise("Plancha", R.drawable.ic_placeholder),
-                new Exercise("Crunch abdominal", R.drawable.ic_placeholder),
-                new Exercise("Elevaciones de piernas", R.drawable.ic_placeholder),
-                new Exercise("Bicicleta en el aire", R.drawable.ic_placeholder),
-                new Exercise("Crunch en máquina", R.drawable.ic_placeholder)
-        )));
+        SearchView sv    = dialogView.findViewById(R.id.svSearch);
+        RecyclerView rv  = dialogView.findViewById(R.id.rvSearchResults);
+        Button btnCancel = dialogView.findViewById(R.id.btnCancel);
 
-        // Grupo Glúteos / Abductores
-        groups.add(new ExerciseGroup("Glúteos / Abductores", Arrays.asList(
-                new Exercise("Hip thrust", R.drawable.ic_placeholder),
-                new Exercise("Puente de glúteos", R.drawable.ic_placeholder),
-                new Exercise("Patada de glúteo en polea", R.drawable.ic_placeholder),
-                new Exercise("Sentadilla sumo", R.drawable.ic_placeholder),
-                new Exercise("Elevación lateral de cadera", R.drawable.ic_placeholder)
-        )));
+        // Asegurarnos de usar el widget de AppCompat y que no aparezca iconificado
+        sv.setIconifiedByDefault(false);
+        sv.clearFocus();
 
-        // Grupo Gemelos
-        groups.add(new ExerciseGroup("Gemelos", Arrays.asList(
-                new Exercise("Elevación de talones de pie", R.drawable.ic_placeholder),
-                new Exercise("Elevación de talones sentado", R.drawable.ic_placeholder),
-                new Exercise("Elevación unilateral de talón", R.drawable.ic_placeholder)
-        )));
+        SearchAdapter searchAdapter = new SearchAdapter(disponibles, ex -> {
+            groups.get(groupPos).getExercises().add(ex);
+            routineAdapter.notifyItemChanged(groupPos);
+            dialog.dismiss();
+        });
 
-        return groups;
+        rv.setLayoutManager(new LinearLayoutManager(this));
+        rv.setAdapter(searchAdapter);
+        // Forzar pintado inicial con la lista completa
+        searchAdapter.filter(""); // ahora verás todos los ejercicios disponibles al abrir
+
+        sv.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override public boolean onQueryTextSubmit(String query) { return false; }
+            @Override
+            public boolean onQueryTextChange(String query) {
+                searchAdapter.filter(query);
+                return true;
+            }
+        });
+
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+        dialog.show();
     }
 }

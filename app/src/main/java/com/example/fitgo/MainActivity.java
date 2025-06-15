@@ -22,10 +22,13 @@ import com.google.android.gms.tasks.Task;
 
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
-
+import com.google.firebase.auth.UserProfileChangeRequest;
 import com.google.firebase.appcheck.FirebaseAppCheck;
 import com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.DocumentSnapshot;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -38,19 +41,16 @@ public class MainActivity extends AppCompatActivity {
     private GoogleSignInClient mGoogleSignInClient;
 
     /**
-     * 1) Declaramos aquí el lanzador moderno para Google Sign-In.
-     *    Este objeto sustituye onActivityResult(...) al usar el API de ActivityResultContracts.
+     * 1) Lanzador moderno para Google Sign-In.
      */
     private final ActivityResultLauncher<Intent> googleSignInLauncher =
             registerForActivityResult(
                     new ActivityResultContracts.StartActivityForResult(),
                     result -> {
-                        // Este callback se ejecuta cuando vuelve el Intent de Google Sign-In
                         if (result.getResultCode() == RESULT_OK && result.getData() != null) {
                             Task<GoogleSignInAccount> task =
                                     GoogleSignIn.getSignedInAccountFromIntent(result.getData());
                             try {
-                                // 2) Obtenemos la cuenta de Google seleccionada por el usuario
                                 GoogleSignInAccount account = task.getResult(ApiException.class);
                                 if (account == null) {
                                     Log.e(TAG, "GoogleSignInAccount es null");
@@ -61,21 +61,14 @@ public class MainActivity extends AppCompatActivity {
                                     ).show();
                                     return;
                                 }
-
-                                // 3) Pedimos el ID token de esa cuenta
                                 String idToken = account.getIdToken();
-                                Log.d(TAG, "Google ID Token: " + idToken);
-
                                 if (idToken != null) {
-                                    // 4) Creamos una credencial de Firebase usando ese ID token
                                     AuthCredential credential =
                                             GoogleAuthProvider.getCredential(idToken, null);
-
-                                    // 5) Iniciamos sesión en Firebase con la credencial
                                     mAuth.signInWithCredential(credential)
                                             .addOnSuccessListener(authResult -> {
-                                                // Login correcto → vamos a HomeActivity
-                                                goToHome();
+                                                // Login correcto → ahora sincronizamos el nombre
+                                                syncDisplayNameAndGoHome();
                                             })
                                             .addOnFailureListener(e -> {
                                                 Log.e(TAG, "Error al autenticar con Firebase: ", e);
@@ -93,7 +86,6 @@ public class MainActivity extends AppCompatActivity {
                                             Toast.LENGTH_LONG
                                     ).show();
                                 }
-
                             } catch (ApiException e) {
                                 Log.e(TAG, "Error en Google Sign-In: " + e.getStatusCode(), e);
                                 Toast.makeText(
@@ -126,11 +118,10 @@ public class MainActivity extends AppCompatActivity {
         tvForgotPassword = findViewById(R.id.tvForgotPassword);
         btnGoogleSignIn  = findViewById(R.id.btnGoogleSignIn);
 
-        // 6) Listener para iniciar sesión con email/contraseña
+        // 6) Email/Password
         btnContinue.setOnClickListener(v -> {
             String email = edtEmail.getText().toString().trim();
             String pass  = edtPassword.getText().toString();
-
             if (TextUtils.isEmpty(email)) {
                 edtEmail.setError(getString(R.string.error_empty_email));
                 edtEmail.requestFocus();
@@ -141,10 +132,10 @@ public class MainActivity extends AppCompatActivity {
                 edtPassword.requestFocus();
                 return;
             }
-
             mAuth.signInWithEmailAndPassword(email, pass)
                     .addOnSuccessListener(authResult -> {
-                        goToHome();
+                        // Sincronizamos displayName antes de ir a Home
+                        syncDisplayNameAndGoHome();
                     })
                     .addOnFailureListener(e -> {
                         Log.e(TAG, "Error al iniciar sesión con email/password: ", e);
@@ -156,43 +147,77 @@ public class MainActivity extends AppCompatActivity {
                     });
         });
 
-        // 7) Ir a RegisterActivity al pulsar “¿No tienes cuenta? Regístrate”
+        // 7) Ir a RegisterActivity
         tvRegister.setOnClickListener(v -> {
             startActivity(new Intent(MainActivity.this, RegisterActivity.class));
         });
 
-        // 8) Recuperar contraseña (solo muestra un Toast por ahora)
+        // 8) Recuperar contraseña
         tvForgotPassword.setOnClickListener(v -> {
-            Toast.makeText(this, "Funcionalidad de recuperación de contraseña pendiente", Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(MainActivity.this, RecuperarContraseñaActivity.class);
+            startActivity(intent);
         });
 
-        // ==== Configuración de Google Sign-In para Firebase ====
+        // Configuración Google Sign-In para Firebase
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(
                 GoogleSignInOptions.DEFAULT_SIGN_IN
         )
-                // Esto le indica a Google que queremos un ID Token válido para Firebase.
-                // Asegúrate de que default_web_client_id coincide con el “Client ID” que te dio Firebase.
                 .requestIdToken(getString(R.string.default_web_client_id))
                 .requestEmail()
                 .build();
-
         mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
-
-        // 9) Cuando se pulsa “Iniciar sesión con Google”, lanzamos el Intent de Google Sign-In
-        btnGoogleSignIn.setOnClickListener(v -> {
-            Intent signInIntent = mGoogleSignInClient.getSignInIntent();
-            // En lugar de startActivityForResult, llamamos ahora a:
-            googleSignInLauncher.launch(signInIntent);
-        });
+        btnGoogleSignIn.setOnClickListener(v ->
+                googleSignInLauncher.launch(mGoogleSignInClient.getSignInIntent())
+        );
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        // Si el usuario ya está autenticado en Firebase, vamos directamente a HomeActivity
         if (mAuth.getCurrentUser() != null) {
-            goToHome();
+            // Ya autenticado, sincronizamos el nombre y vamos
+            syncDisplayNameAndGoHome();
         }
+    }
+
+    /**
+     * 9) Recupera de Firestore el fullName y lo asigna como displayName en Auth,
+     *    luego lanza HomeActivity.
+     */
+    private void syncDisplayNameAndGoHome() {
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null) {
+            // debería ser raro, pero volvemos al login
+            finish();
+            return;
+        }
+        String uid = user.getUid();
+        FirebaseFirestore.getInstance()
+                .collection("users")
+                .document(uid)
+                .get()
+                .addOnSuccessListener((DocumentSnapshot doc) -> {
+                    if (doc.exists() && doc.getString("fullName") != null) {
+                        String fullName = doc.getString("fullName");
+                        // Actualizamos el perfil de FirebaseAuth
+                        UserProfileChangeRequest profileUpdates =
+                                new UserProfileChangeRequest.Builder()
+                                        .setDisplayName(fullName)
+                                        .build();
+                        user.updateProfile(profileUpdates)
+                                .addOnCompleteListener(task -> {
+                                    // Ya con displayName, seguimos a Home
+                                    goToHome();
+                                });
+                    } else {
+                        // No hay fullName, vamos a Home igualmente
+                        goToHome();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    // En error, vamos a Home igualmente
+                    goToHome();
+                });
     }
 
     /** Abre HomeActivity y cierra esta pantalla */

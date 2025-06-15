@@ -4,33 +4,36 @@ import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import java.util.List;
 
-/**
- * Adapter principal: muestra una lista de ExerciseGroup.
- * En cada grupo inflamos item_exercise_group.xml, que contiene
- * un RecyclerView para los ejercicios de ese grupo.
- */
-public class RoutineAdapter extends RecyclerView.Adapter<RoutineAdapter.GroupViewHolder> {
+public class RoutineAdapter
+        extends RecyclerView.Adapter<RoutineAdapter.GroupViewHolder> {
 
-    private final List<ExerciseGroup> groupList;
-    private final Context context;
-
-    public RoutineAdapter(Context context, List<ExerciseGroup> groupList) {
-        this.context = context;
-        this.groupList = groupList;
+    public interface Listener {
+        void onAddClicked(int groupPosition);
+        void onRemoveClicked(int groupPosition, int exercisePosition);
     }
 
-    @NonNull
-    @Override
+    private final Context context;
+    private final List<ExerciseGroup> groupList;
+    private final Listener listener;
+
+    public RoutineAdapter(Context context, List<ExerciseGroup> groupList, Listener listener) {
+        this.context = context;
+        this.groupList = groupList;
+        this.listener = listener;
+    }
+
+    @NonNull @Override
     public GroupViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext())
+        View v = LayoutInflater.from(context)
                 .inflate(R.layout.item_exercise_group, parent, false);
-        return new GroupViewHolder(view);
+        return new GroupViewHolder(v);
     }
 
     @Override
@@ -38,12 +41,21 @@ public class RoutineAdapter extends RecyclerView.Adapter<RoutineAdapter.GroupVie
         ExerciseGroup group = groupList.get(position);
         holder.tvGroupName.setText(group.getGroupName());
 
-        // Creamos un adaptador para los ejercicios de este grupo
-        ExerciseAdapter exerciseAdapter = new ExerciseAdapter(group.getExercises());
+        // Interno de ejercicios
         holder.rvExercises.setLayoutManager(
                 new LinearLayoutManager(context, RecyclerView.VERTICAL, false)
         );
-        holder.rvExercises.setAdapter(exerciseAdapter);
+        ExerciseAdapter exAdapter = new ExerciseAdapter(pos ->
+                // aquí usamos holder.getAdapterPosition()
+                listener.onRemoveClicked(holder.getAdapterPosition(), pos)
+        );
+        exAdapter.submitList(group.getExercises());
+        holder.rvExercises.setAdapter(exAdapter);
+
+        // Botón Agregar
+        holder.btnAdd.setOnClickListener(v ->
+                listener.onAddClicked(holder.getAdapterPosition())
+        );
     }
 
     @Override
@@ -54,11 +66,13 @@ public class RoutineAdapter extends RecyclerView.Adapter<RoutineAdapter.GroupVie
     static class GroupViewHolder extends RecyclerView.ViewHolder {
         TextView tvGroupName;
         RecyclerView rvExercises;
+        Button btnAdd;
 
         GroupViewHolder(@NonNull View itemView) {
             super(itemView);
             tvGroupName = itemView.findViewById(R.id.tvGroupName);
             rvExercises = itemView.findViewById(R.id.rvExercises);
+            btnAdd      = itemView.findViewById(R.id.btnAdd);
         }
     }
 }

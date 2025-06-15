@@ -118,6 +118,8 @@ public class RegisterActivity extends AppCompatActivity {
                         profile.put("fullName", name);
                         profile.put("email", email);
                         profile.put("createdAt", FieldValue.serverTimestamp());
+                        // **Asignamos aquí el monitor por defecto**
+                        profile.put("monitorId", "6gMJXUWwhZVGwTnlHeiHmLkVPlw1");
 
                         db.collection("users")
                                 .document(uid)

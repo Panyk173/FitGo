@@ -2,7 +2,6 @@
 <androidx.cardview.widget.CardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="8dp"
@@ -10,29 +9,54 @@
     app:cardCornerRadius="8dp"
     android:padding="8dp">
 
-    <LinearLayout
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical">
+        android:padding="4dp">
 
+        <!-- GIF animado -->
         <ImageView
-            android:id="@+id/ivIcon"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:src="@drawable/ic_placeholder"
-            android:contentDescription="@string/exercise_icon_desc"
-            android:layout_marginEnd="12dp"
-            tools:ignore="ContentDescription"
-            tools:srcCompat="@drawable/ic_placeholder" />
+            android:id="@+id/imgGif"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:scaleType="centerCrop" />
 
-        <TextView
-            android:id="@+id/tvExerciseName"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            tools:text="Press banca" />
+            android:layout_toEndOf="@id/imgGif"
+            android:layout_marginStart="12dp"
+            android:orientation="vertical"
+            android:paddingEnd="36dp">
 
-    </LinearLayout>
+            <!-- Nombre traducido -->
+            <TextView
+                android:id="@+id/tvNameEs"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <!-- Objetivo traducido -->
+            <TextView
+                android:id="@+id/tvTargetEs"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textSize="14sp" />
+        </LinearLayout>
+
+        <!-- Botón para quitar ejercicio usando drawable del sistema -->
+        <ImageButton
+            android:id="@+id/btnRemove"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            android:contentDescription="@null"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            app:tint="?attr/colorOnSurface" />
+
+    </RelativeLayout>
 </androidx.cardview.widget.CardView>
